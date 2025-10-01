@@ -1,0 +1,166 @@
+name: Deploy PROD
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_migration:
+        description: "Run DB migration"
+        required: false
+        type: boolean
+        default: false
+      deploy_docker:
+        description: "Deploy Docker images"
+        required: false
+        type: boolean
+        default: true
+      deploy_api:
+        description: "Deploy API"
+        required: false
+        type: boolean
+        default: true
+      deploy_pipeline:
+        description: "Deploy pipeline"
+        required: false
+        type: boolean
+        default: true
+        # Keep this parameter commented out unless needed
+      # deploy_override:
+      #   description: "Override branch validation"
+      #   required: false
+      #   type: boolean
+      #   default: false
+  release:
+    types:
+      - published
+
+
+jobs:
+  validate-trigger:
+    runs-on: ubuntu-latest
+    outputs:
+      should_proceed: ${{ steps.check.outputs.should_proceed }}
+    steps:
+      - name: Check if deployment should proceed
+        id: check
+        run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Head ref: ${{ github.head_ref }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Deploy override: ${{ github.event.inputs.deploy_override || 'false' }}"
+
+          # If deploy override is enabled, always proceed
+          if [[ "${{ github.event.inputs.deploy_override || 'false' }}" == "true" ]]; then
+            echo "Deploy override enabled - proceeding regardless of branch"
+            should_proceed=true
+            echo "should_proceed=true" >> $GITHUB_OUTPUT
+          # If triggered by GitHub release publication, always proceed
+          elif [[ "${{ github.event_name }}" == "release" ]]; then
+            echo "Triggered by GitHub release publication - proceeding"
+            should_proceed=true
+            echo "should_proceed=true" >> $GITHUB_OUTPUT
+          # If triggered by pull request to main, always proceed
+          elif [[ "${{ github.event_name }}" == "pull_request" && "${{ github.base_ref }}" == "main" ]]; then
+            echo "Triggered by PR to main - proceeding"
+            should_proceed=true
+            echo "should_proceed=true" >> $GITHUB_OUTPUT
+          # If manually triggered, check if on release or hotfix branch or main
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            branch="${{ github.ref_name }}"
+            if [[ "$branch" =~ ^(release|hotfix)/ ]] || [[ "$branch" == "main" ]]; then
+              echo "Manual trigger on $branch branch - proceeding"
+              should_proceed=true
+              echo "should_proceed=true" >> $GITHUB_OUTPUT
+            else
+              echo "Manual trigger on $branch branch - not a release or hotfix branch"
+              echo "Release and hotfix branches should be named with a slash, eg: release/1.1"
+              should_proceed=false
+              echo "should_proceed=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "Invalid trigger condition"
+            should_proceed=false
+            echo "should_proceed=false" >> $GITHUB_OUTPUT
+          fi
+          if [[ "$should_proceed" != "true" ]]; then
+            echo "Deployment validation failed - exiting"
+            exit 1
+          fi
+
+  deploy-core:
+    uses: ./.github/workflows/run_deploy_core.yaml
+    needs: validate-trigger
+    if: >-
+      ${{ 
+      needs.validate-trigger.outputs.should_proceed == 'true' && 
+      !failure() && 
+      !cancelled() && 
+      (github.event_name == 'pull_request' || 
+       github.event_name == 'release' ||
+       (github.event_name == 'workflow_dispatch' && 
+        (github.event.inputs.deploy_api == 'true' || github.event.inputs.deploy_pipeline == 'true')))
+      }}
+    with:
+      runner: AICOMPANION-BACKEND_PROD
+      env: prod
+      aws_region: us-west-2
+
+  db-migration:
+    if: >-
+      ${{ 
+      !failure() && 
+      !cancelled() && 
+      (github.event.inputs.run_migration == 'true' || github.event_name == 'release')
+      }}
+    uses: ./.github/workflows/run_db_migration.yaml
+    needs:
+      - deploy-core
+    with:
+      secret_manager_arn: arn:aws:secretsmanager:us-west-2:788174142189:secret:cmg-hopper-prod-aicompanion-db-credentials-8kS6O2
+      runner: AICOMPANION-BACKEND_PROD
+      env: prod
+
+  deploy-api:
+    uses: ./.github/workflows/run_deploy_service.yaml
+    if: >-
+      ${{ 
+      !failure() && 
+      !cancelled() && 
+       github.event_name == 'release' ||
+       (github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_api == 'true'))
+      }}
+    needs:
+      - db-migration
+      - deploy-core
+    with:
+      runner: AICOMPANION-BACKEND_PROD
+      env: prod
+      aws_region: us-west-2
+      target_stack: hopper-agent-companion
+      context: backend
+      docker_path: backend/agent_companion/Dockerfile
+      deploy_docker: ${{ github.event_name == 'release' && true || fromJSON(github.event.inputs.deploy_docker) }}
+      docker_repository: "788174142189.dkr.ecr.us-west-2.amazonaws.com/cmg-hopper-prod-aicompanion-backend"
+
+  deploy-pipeline:
+    uses: ./.github/workflows/run_deploy_service.yaml
+    if: >-
+      ${{ 
+      !failure() && 
+      !cancelled() && 
+       github.event_name == 'release' ||
+       (github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_pipeline == 'true'))
+      }}
+    needs:
+      - db-migration
+      - deploy-core
+    with:
+      runner: AICOMPANION-BACKEND_PROD
+      env: prod
+      aws_region: us-west-2
+      target_stack: hopper-data-pipeline
+      context: backend
+      docker_path: backend/data_pipeline/Dockerfile
+      deploy_docker: ${{ github.event_name == 'release' && true || fromJSON(github.event.inputs.deploy_docker) }}
+      docker_repository: "788174142189.dkr.ecr.us-west-2.amazonaws.com/cmg-hopper-prod-aicompanion-pipeline"
+      docker_target: "lambda"

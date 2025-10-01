@@ -1,0 +1,196 @@
+{
+  "app": "python3 app.py",
+  "watch": {
+    "include": ["**"],
+    "exclude": [
+      "README.md",
+      "cdk*.json",
+      "requirements*.txt",
+      "source.bat",
+      "**/__init__.py",
+      "**/__pycache__",
+      "tests"
+    ]
+  },
+  "context": {
+    "core": {
+      "department": "cmg",
+      "platform": "hopper",
+      "project": "aicompanion",
+      "tags": {
+        "department": "usix_application_aria",
+        "platform": "hopper",
+        "project": "aria",
+        "subject_area": "aria",
+        "wbs_code": "null",
+        "monthly_budget": "Yes"
+      }
+    },
+    "environments": {
+      "dev": {
+        "environment": "dev",
+        "account": "842675991019",
+        "region": "us-west-2",
+        "vpc_id": "vpc-0ab9df8440a2398d5",
+        "vpc_availability_zones": [
+          {
+            "az_name": "us-west-2a",
+            "public_subnet_ids": ["subnet-035594ce4bb65911f"],
+            "private_subnet_ids": ["subnet-0bfb1b58455b896ea"],
+            "connection_subnet_ids": ["subnet-0cb25d1424c9a4d62"]
+          },
+          {
+            "az_name": "us-west-2b",
+            "public_subnet_ids": ["subnet-0dfd997904189361f"],
+            "private_subnet_ids": ["subnet-07ce26fe12648780a"],
+            "connection_subnet_ids": ["subnet-035594ce4bb65911f"]
+          }
+        ],
+        "deepgram_secret_arn": "arn:aws:secretsmanager:us-west-2:842675991019:secret:cmg-oasis-dev-hopper-aria-deepgram-secret-Lrv6bI",
+        "ae_detection_repo_account": "842675991019",
+        "ae_detection_repo_name": "cds/ae-detector-agentic",
+        "ae_detection_image_tag": "1.4",
+        "bastion_ami": "ami-07eb7b42fba5faa63",
+        "oauth_secret_arn": "arn:aws:secretsmanager:us-west-2:842675991019:secret:cmg-oasis-dev-aicompanion-aria-sso-fUvT7I",
+        "talkdesk_secret_arn": "arn:aws:secretsmanager:us-west-2:842675991019:secret:cmg-hopper-dev-aicompanion-talkdesk-sso-up9LiH",
+        "frontend_domain_name": "aria-dev.roche.com",
+        "backend_domain_name": "api-aria-dev.roche.com",
+        "callback_api_domain": "external.aria-dev.roche.com",
+        "frontend_certificate_arn": "arn:aws:acm:us-east-1:842675991019:certificate/b74ff084-2723-486e-a502-95def2a0eda6",
+        "backend_certificate_arn": "arn:aws:acm:us-west-2:842675991019:certificate/d1387115-c6c2-46cb-9dba-61a513a3cd47",
+        "callback_api_certificate_arn": "arn:aws:acm:us-west-2:842675991019:certificate/78ff0222-0b75-43e0-804d-12212c5201ad"
+      },
+      "qa": {
+        "environment": "qa",
+        "account": "521207982840",
+        "region": "us-west-2",
+        "vpc_id": "vpc-099fb21da346a68b2",
+        "vpc_availability_zones": [
+          {
+            "az_name": "us-west-2a",
+            "public_subnet_ids": ["subnet-0ef39e81611ba9a46"],
+            "private_subnet_ids": ["subnet-06bc0d546b15ed389"],
+            "connection_subnet_ids": ["subnet-08443fb351cdbf219"]
+          },
+          {
+            "az_name": "us-west-2b",
+            "public_subnet_ids": ["subnet-05aa9bb9eb42ea0ae"],
+            "private_subnet_ids": ["subnet-08eec17541490b92d"],
+            "connection_subnet_ids": ["subnet-0ae52143fd7f9e5cf"]
+          }
+        ],
+        "deepgram_secret_arn": "arn:aws:secretsmanager:us-west-2:521207982840:secret:cmg-oasis-qa-hopper-aria-deepgram-secret-lbpaGE",
+        "ae_detection_repo_account": "842675991019",
+        "ae_detection_repo_name": "cds/ae-detector-agentic",
+        "ae_detection_image_tag": "1.4",
+        "bastion_ami": "ami-07df1354cf369ffbb",
+        "talkdesk_secret_arn": "arn:aws:secretsmanager:us-west-2:521207982840:secret:cmg-hopper-qa-aicompanion-talkdesk-sso-O2LNHJ",
+        "oauth_secret_arn": "arn:aws:secretsmanager:us-west-2:521207982840:secret:cmg-oasis-qa-aicompanion-aria-sso-CuyAvS",
+        "frontend_domain_name": "aria-qa.roche.com",
+        "backend_domain_name": "api-aria-qa.roche.com",
+        "callback_api_domain": "external.aria-qa.roche.com",
+        "frontend_certificate_arn": "arn:aws:acm:us-east-1:521207982840:certificate/f7ae9ebb-bba3-4ba4-abb7-7c7aee26a409",
+        "backend_certificate_arn": "arn:aws:acm:us-west-2:521207982840:certificate/f5e60876-e69b-4fa3-bb4e-9adaf9378f3e",
+        "callback_api_certificate_arn": "arn:aws:acm:us-west-2:521207982840:certificate/95f1e583-b5e0-4c5b-9f85-48750bf72db0"
+      },
+      "prod": {
+        "environment": "prod",
+        "account": "788174142189",
+        "region": "us-west-2",
+        "vpc_id": "vpc-0b6103d04eeea9bb2",
+        "vpc_availability_zones": [
+          {
+            "az_name": "us-west-2a",
+            "public_subnet_ids": ["subnet-0eb58b51d184dd19a"],
+            "private_subnet_ids": ["subnet-0c42d47a4fb9bc783"],
+            "connection_subnet_ids": ["subnet-0f21d395e83908435"]
+          },
+          {
+            "az_name": "us-west-2b",
+            "public_subnet_ids": ["subnet-009d69713a3715f4f"],
+            "private_subnet_ids": ["subnet-00741215df72c46ba"],
+            "connection_subnet_ids": ["subnet-0481ffc9613e113da"]
+          }
+        ],
+        "deepgram_secret_arn": "arn:aws:secretsmanager:us-west-2:788174142189:secret:cmg-oasis-prod-hopper-pmr-deepgram-secret-ip-address-itGA1D",
+        "ae_detection_repo_account": "842675991019",
+        "ae_detection_repo_name": "cds/ae-detector-agentic",
+        "ae_detection_image_tag": "1.4",
+        "talkdesk_secret_arn": "arn:aws:secretsmanager:us-west-2:788174142189:secret:cmg-hopper-qa-aicompanion-talkdesk-sso-mxc49n",
+        "oauth_secret_arn": "arn:aws:secretsmanager:us-west-2:788174142189:secret:cmg-oasis-prod-aicompanion-aria-sso-Tcz4tN",
+        "frontend_domain_name": "aria.roche.com",
+        "backend_domain_name": "api-aria.roche.com",
+        "callback_api_domain": "external.aria.roche.com",
+        "frontend_certificate_arn": "arn:aws:acm:us-east-1:788174142189:certificate/eee51deb-cdbe-4c3b-bc0d-ef4824980f68",
+        "backend_certificate_arn": "arn:aws:acm:us-west-2:788174142189:certificate/6288a2c2-5b89-4e08-8649-04c0097abf29",
+        "callback_api_certificate_arn": "arn:aws:acm:us-west-2:788174142189:certificate/2d1ec492-48a4-45c1-bb47-62110635c172"
+      }
+    },
+    "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
+    "@aws-cdk/core:checkSecretUsage": true,
+    "@aws-cdk/core:target-partitions": ["aws", "aws-cn"],
+    "@aws-cdk-containers/ecs-service-extensions:enableDefaultLogDriver": true,
+    "@aws-cdk/aws-ec2:uniqueImdsv2TemplateName": true,
+    "@aws-cdk/aws-ecs:arnFormatIncludesClusterName": true,
+    "@aws-cdk/aws-iam:minimizePolicies": true,
+    "@aws-cdk/core:validateSnapshotRemovalPolicy": true,
+    "@aws-cdk/aws-codepipeline:crossAccountKeyAliasStackSafeResourceName": true,
+    "@aws-cdk/aws-s3:createDefaultLoggingPolicy": true,
+    "@aws-cdk/aws-sns-subscriptions:restrictSqsDescryption": true,
+    "@aws-cdk/aws-apigateway:disableCloudWatchRole": true,
+    "@aws-cdk/core:enablePartitionLiterals": true,
+    "@aws-cdk/aws-events:eventsTargetQueueSameAccount": true,
+    "@aws-cdk/aws-ecs:disableExplicitDeploymentControllerForCircuitBreaker": true,
+    "@aws-cdk/aws-iam:importedRoleStackSafeDefaultPolicyName": true,
+    "@aws-cdk/aws-s3:serverAccessLogsUseBucketPolicy": true,
+    "@aws-cdk/aws-route53-patters:useCertificate": true,
+    "@aws-cdk/customresources:installLatestAwsSdkDefault": false,
+    "@aws-cdk/aws-rds:databaseProxyUniqueResourceName": true,
+    "@aws-cdk/aws-codedeploy:removeAlarmsFromDeploymentGroup": true,
+    "@aws-cdk/aws-apigateway:authorizerChangeDeploymentLogicalId": true,
+    "@aws-cdk/aws-ec2:launchTemplateDefaultUserData": true,
+    "@aws-cdk/aws-secretsmanager:useAttachedSecretResourcePolicyForSecretTargetAttachments": true,
+    "@aws-cdk/aws-redshift:columnId": true,
+    "@aws-cdk/aws-stepfunctions-tasks:enableEmrServicePolicyV2": true,
+    "@aws-cdk/aws-ec2:restrictDefaultSecurityGroup": true,
+    "@aws-cdk/aws-apigateway:requestValidatorUniqueId": true,
+    "@aws-cdk/aws-kms:aliasNameRef": true,
+    "@aws-cdk/aws-autoscaling:generateLaunchTemplateInsteadOfLaunchConfig": true,
+    "@aws-cdk/core:includePrefixInUniqueNameGeneration": true,
+    "@aws-cdk/aws-efs:denyAnonymousAccess": true,
+    "@aws-cdk/aws-opensearchservice:enableOpensearchMultiAzWithStandby": true,
+    "@aws-cdk/aws-lambda-nodejs:useLatestRuntimeVersion": true,
+    "@aws-cdk/aws-efs:mountTargetOrderInsensitiveLogicalId": true,
+    "@aws-cdk/aws-rds:auroraClusterChangeScopeOfInstanceParameterGroupWithEachParameters": true,
+    "@aws-cdk/aws-appsync:useArnForSourceApiAssociationIdentifier": true,
+    "@aws-cdk/aws-rds:preventRenderingDeprecatedCredentials": true,
+    "@aws-cdk/aws-codepipeline-actions:useNewDefaultBranchForCodeCommitSource": true,
+    "@aws-cdk/aws-cloudwatch-actions:changeLambdaPermissionLogicalIdForLambdaAction": true,
+    "@aws-cdk/aws-codepipeline:crossAccountKeysDefaultValueToFalse": true,
+    "@aws-cdk/aws-codepipeline:defaultPipelineTypeToV2": true,
+    "@aws-cdk/aws-kms:reduceCrossAccountRegionPolicyScope": true,
+    "@aws-cdk/aws-eks:nodegroupNameAttribute": true,
+    "@aws-cdk/aws-ec2:ebsDefaultGp3Volume": true,
+    "@aws-cdk/aws-ecs:removeDefaultDeploymentAlarm": true,
+    "@aws-cdk/custom-resources:logApiResponseDataPropertyTrueDefault": false,
+    "@aws-cdk/aws-s3:keepNotificationInImportedBucket": false,
+    "@aws-cdk/aws-ecs:enableImdsBlockingDeprecatedFeature": false,
+    "@aws-cdk/aws-ecs:disableEcsImdsBlocking": true,
+    "@aws-cdk/aws-ecs:reduceEc2FargateCloudWatchPermissions": true,
+    "@aws-cdk/aws-dynamodb:resourcePolicyPerReplica": true,
+    "@aws-cdk/aws-ec2:ec2SumTImeoutEnabled": true,
+    "@aws-cdk/aws-appsync:appSyncGraphQLAPIScopeLambdaPermission": true,
+    "@aws-cdk/aws-rds:setCorrectValueForDatabaseInstanceReadReplicaInstanceResourceId": true,
+    "@aws-cdk/core:cfnIncludeRejectComplexResourceUpdateCreatePolicyIntrinsics": true,
+    "@aws-cdk/aws-lambda-nodejs:sdkV3ExcludeSmithyPackages": true,
+    "@aws-cdk/aws-stepfunctions-tasks:fixRunEcsTaskPolicy": true,
+    "@aws-cdk/aws-ec2:bastionHostUseAmazonLinux2023ByDefault": true,
+    "@aws-cdk/aws-route53-targets:userPoolDomainNameMethodWithoutCustomResource": true,
+    "@aws-cdk/aws-elasticloadbalancingV2:albDualstackWithoutPublicIpv4SecurityGroupRulesDefault": true,
+    "@aws-cdk/aws-iam:oidcRejectUnauthorizedConnections": true,
+    "@aws-cdk/core:enableAdditionalMetadataCollection": true,
+    "@aws-cdk/aws-lambda:createNewPoliciesWithAddToRolePolicy": true,
+    "@aws-cdk/aws-s3:setUniqueReplicationRoleName": true,
+    "@aws-cdk/aws-events:requireEventBusPolicySid": true
+  }
+}

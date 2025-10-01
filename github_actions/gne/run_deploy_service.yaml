@@ -1,0 +1,149 @@
+name: __Subflow__ Run Service Deploy 
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        required: true
+        type: string
+      env:
+        description: "Deployment environment (dev, qa, prod)"
+        required: true
+        type: string
+      docker_repository:
+        description: "Docker repository URL"
+        required: true
+        type: string
+      context:
+        description: "Path to the Build context"
+        required: true
+        type: string
+      docker_path:
+        description: "Path to the dockerfile within the context"
+        required: true
+        type: string
+      deploy_docker:
+        description: "Should the docker image be deployed"
+        required: false
+        type: boolean
+        default: true
+      aws_region:
+        required: false
+        type: string
+        default: "us-west-2"
+      target_stack:
+        description: "Target stack name"
+        required: true
+        type: string
+      docker_target:
+        description: "Docker image target"
+        required: false
+        type: string
+        default: "release"
+
+jobs:
+  deploy-docker:
+    if: ${{ inputs.deploy_docker == true }}
+    runs-on: ${{ inputs.runner }}
+    env:
+      BUILDX_NO_DEFAULT_ATTESTATIONS: 1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ inputs.aws_region }}
+
+      - name: Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+     
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ inputs.docker_repository }}
+          tags: |
+            type=schedule
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ inputs.context }}
+          file: ${{ inputs.docker_path }}
+          push: true
+          target: ${{ inputs.docker_target }}
+          tags: ${{ steps.meta.outputs.tags }}
+          platforms: linux/amd64
+          provenance: false
+          sbom: false
+
+  deploy:
+    if: ${{! failure() && ! cancelled() }}
+    runs-on: ${{ inputs.runner }}
+    needs:
+      - deploy-docker
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set docker label
+        id: vars
+        run: |
+          if [ "${{ inputs.deploy_docker }}" == "true" ]; then
+            calculatedSha=$(git rev-parse --short ${{ github.sha }})
+            echo "DOCKER_LABEL=sha-$calculatedSha" >> $GITHUB_ENV
+          else
+            branchName=$(echo "${{ github.ref_name }}" | sed 's/\//-/g')
+            echo "DOCKER_LABEL=$branchName" >> $GITHUB_ENV
+          fi
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ inputs.aws_region }}
+      
+      - name: Use Node.js 20
+        uses: actions/setup-node@v1
+        with:
+          node-version: 20
+
+      - name: Setup Venv
+        run: |
+          python3.12 -m ensurepip --upgrade
+          python3.12 -m pip install --upgrade pip
+          python3.12 -m pip install uv~=0.7.2
+          python3.12 -m venv .venv
+          echo "VIRTUAL_ENV=.venv" >> $GITHUB_ENV
+          echo "PATH=.venv/bin:$PATH" >> $GITHUB_ENV
+      
+      
+      - name: Install dependencies
+        run: |
+          source .venv/bin/activate
+          pip install -r infrastructure/cdk/requirements.txt
+          npm install -g aws-cdk
+          make prepare-lambdas
+
+      # TODO: there may come a day when we need to deploy multiple docker images
+      # when that day comes, consider using the parameter store
+      - name: Deploy infrastructure
+        run: |
+          source .venv/bin/activate
+          cd infrastructure/cdk
+          cdk deploy ${{ inputs.target_stack }} \
+            --require-approval never \
+            --context env=${{ inputs.env }} \
+            --context docker_tag=${{ env.DOCKER_LABEL }} \
+            --import-existing-resources true \
+            --exclusively

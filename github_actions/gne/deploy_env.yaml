@@ -1,0 +1,129 @@
+name: Deploy Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        options:
+          - dev
+          - qa
+        default: dev
+      run_migration:
+        description: "Run DB migration"
+        required: false
+        type: boolean
+        default: false
+      deploy_docker:
+        description: "Deploy Docker image"
+        required: false
+        type: boolean
+        default: true
+      deploy_api:
+        description: "Deploy API"
+        required: false
+        type: boolean
+        default: true
+      deploy_pipeline:
+        description: "Deploy pipeline"
+        required: false
+        type: boolean
+        default: true
+
+run-name: "Deploy to ${{ github.event.inputs.environment }}"
+
+env:
+  # Environment to AWS Account ID mapping (for reference)
+  AWS_ACCOUNT_QA: "521207982840"
+  AWS_ACCOUNT_DEV: "842675991019"
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      runner: ${{ steps.config.outputs.runner }}
+      ac_docker_repository: ${{ steps.config.outputs.ac_docker_repository }}
+      pipeline_docker_repository: ${{ steps.config.outputs.pipeline_docker_repository }}
+      secret_manager_arn: ${{ steps.config.outputs.secret_manager_arn }}
+    steps:
+      - name: Configure environment values
+        id: config
+        run: |
+          ENV="${{ github.event.inputs.environment }}"
+          echo "Configuring for environment: $ENV"
+
+          if [[ "$ENV" == "dev" ]]; then
+            echo "Loading DEV environment configuration..."
+            echo "runner=AICOMPANION-BACKEND_DEV" >> $GITHUB_OUTPUT
+            echo "ac_docker_repository=842675991019.dkr.ecr.us-west-2.amazonaws.com/cmg-hopper-dev-aicompanion-backend" >> $GITHUB_OUTPUT
+            echo "pipeline_docker_repository=842675991019.dkr.ecr.us-west-2.amazonaws.com/cmg-hopper-dev-aicompanion-pipeline" >> $GITHUB_OUTPUT
+            echo "secret_manager_arn=arn:aws:secretsmanager:us-west-2:842675991019:secret:cmg-hopper-dev-aicompanion-db-credentials-E2GheV" >> $GITHUB_OUTPUT
+          elif [[ "$ENV" == "qa" ]]; then
+            echo "Loading QA environment configuration..."
+            echo "runner=AICOMPANION-BACKEND_QA" >> $GITHUB_OUTPUT
+            echo "ac_docker_repository=521207982840.dkr.ecr.us-west-2.amazonaws.com/cmg-hopper-qa-aicompanion-backend" >> $GITHUB_OUTPUT
+            echo "pipeline_docker_repository=521207982840.dkr.ecr.us-west-2.amazonaws.com/cmg-hopper-qa-aicompanion-pipeline" >> $GITHUB_OUTPUT
+            echo "secret_manager_arn=arn:aws:secretsmanager:us-west-2:521207982840:secret:cmg-hopper-qa-aicompanion-db-credentials-cPgGdb" >> $GITHUB_OUTPUT
+          else
+            echo "ERROR: Unknown environment '$ENV'. Supported environments: dev, qa"
+            exit 1
+          fi
+
+          echo "Environment configuration completed successfully"
+
+  deploy-core:
+    uses: ./.github/workflows/run_deploy_core.yaml
+    needs: setup
+    if: ${{github.event.inputs.deploy_api == 'true' || github.event.inputs.deploy_pipeline == 'true' }}
+    with:
+      runner: ${{ needs.setup.outputs.runner }}
+      env: ${{ github.event.inputs.environment }}
+      aws_region: us-west-2
+
+  db-migration:
+    if: ${{ !failure() && ! cancelled() && github.event.inputs.run_migration == 'true' }}
+    uses: ./.github/workflows/run_db_migration.yaml
+    needs:
+      - setup
+      - deploy-core
+    with:
+      secret_manager_arn: ${{ needs.setup.outputs.secret_manager_arn }}
+      runner: ${{ needs.setup.outputs.runner }}
+      env: ${{ github.event.inputs.environment }}
+
+  deploy-api:
+    uses: ./.github/workflows/run_deploy_service.yaml
+    if: ${{! failure() && ! cancelled() && github.event.inputs.deploy_api == 'true' }}
+    needs:
+      - setup
+      - db-migration
+      - deploy-core
+    with:
+      runner: ${{ needs.setup.outputs.runner }}
+      env: ${{ github.event.inputs.environment }}
+      aws_region: us-west-2
+      target_stack: hopper-agent-companion
+      context: backend
+      docker_path: backend/agent_companion/Dockerfile
+      deploy_docker: "${{ fromJSON(github.event.inputs.deploy_docker) }}"
+      docker_repository: ${{ needs.setup.outputs.ac_docker_repository }}
+
+  deploy-pipeline:
+    uses: ./.github/workflows/run_deploy_service.yaml
+    if: ${{! failure() && ! cancelled() && github.event.inputs.deploy_pipeline == 'true' }}
+    needs:
+      - setup
+      - db-migration
+      - deploy-core
+    with:
+      runner: ${{ needs.setup.outputs.runner }}
+      env: ${{ github.event.inputs.environment }}
+      aws_region: us-west-2
+      target_stack: hopper-data-pipeline
+      context: backend
+      docker_path: backend/data_pipeline/Dockerfile
+      deploy_docker: "${{ fromJSON(github.event.inputs.deploy_docker) }}"
+      docker_repository: ${{ needs.setup.outputs.pipeline_docker_repository }}
+      docker_target: "lambda"

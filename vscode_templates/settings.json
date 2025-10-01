@@ -1,0 +1,53 @@
+{
+  "python.analysis.extraPaths": [
+    "cmg-hopper-aicompanion-backend/backend/agent_companion",
+    "cmg-hopper-aicompanion-backend/backend/data_pipeline",
+    "cmg-hopper-aicompanion-backend/backend/common/common",
+    "cmg-hopper-aicompanion-backend/infrastructure/cdk"
+  ],
+  "python.autoComplete.extraPaths": [
+    "cmg-hopper-aicompanion-backend/backend/agent_companion",
+    "cmg-hopper-aicompanion-backend/backend/data_pipeline",
+    "cmg-hopper-aicompanion-backend/backend/common",
+    "cmg-hopper-aicompanion-backend/infrastructure/cdk"
+  ],
+  "python.analysis.typeCheckingMode": "off",
+  "files.exclude": {
+    "**/.ruff_cache": true,
+    "**/__pycache__/**": true
+  },
+  "files.watcherExclude": {
+    "**/cdk.out/**": true,
+    "**/__pycache__/**": true,
+    "**/tmp/**": true
+  },
+  "workbench.localHistory.exclude": {
+    "**/cdk.out/**": true,
+    "**/__pycache__/**": true
+  },
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": [
+    "--rootdir=${workspaceFolder}",
+    "-v",
+    "--tb=short",
+    "--ignore=cmg-hopper-aicompanion-backend/infrastructure/cdk/cdk.out",
+    "--ignore=cmg-hopper-aicompanion-backend/infrastructure/cdk/test_venv"
+    
+  ],
+  "python.envFile": "${workspaceFolder}/.vscode/.env",
+  "python.testing.cwd": "${workspaceFolder}",
+  "python.terminal.activateEnvironment": true,
+  "python.defaultInterpreterPath": "python",
+  "python.testing.pytestPath": "pytest",
+  "python.testing.autoTestDiscoverOnSaveEnabled": true,
+  "[python]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    },
+    
+  },
+  "python.linting.pylintEnabled": false,
+  
+}

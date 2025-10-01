@@ -1,0 +1,152 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python Debugger: Current File",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/common:${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/data_pipeline:${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/agent_companion"
+      }
+    },
+    {
+      "name": "Data Pipeline: Debug Current Test File",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["${file}", "-v", "-s"],
+      "cwd": "${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/data_pipeline",
+      "envFile": "${workspaceFolder}/.vscode/.env",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/common:${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/data_pipeline:${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/agent_companion"
+      }
+    },
+    {
+      "name": "Data Pipeline: Debug Specific Test",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["-v", "-s", "-k", "${input:testName}"],
+      "cwd": "${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/data_pipeline",
+      "envFile": "${workspaceFolder}/.vscode/.env",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/common:${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/data_pipeline:${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/agent_companion"
+      }
+    },
+    {
+      "name": "Data Pipeline: Debug All Tests",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["data_pipeline/", "-v", "-s"],
+      "cwd": "${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/data_pipeline",
+      "envFile": "${workspaceFolder}/.vscode/.env",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/common:${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/data_pipeline:${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/agent_companion"
+      }
+    },
+    {
+      "name": "Data Pipeline: Debug Submit Call Tests",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["data_pipeline/submit_call_test.py", "-v", "-s"],
+      "cwd": "${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/data_pipeline",
+      "envFile": "${workspaceFolder}/.vscode/.env",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/common:${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/data_pipeline:${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/agent_companion"
+      }
+    },
+    {
+      "name": "Data Pipeline: Debug AE Detection Tests",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["data_pipeline/ae_detection_test.py", "-v", "-s"],
+      "cwd": "${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/data_pipeline",
+      "envFile": "${workspaceFolder}/.vscode/.env",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/common:${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/data_pipeline:${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/agent_companion"
+      }
+    },
+    {
+      "name": "Agent Companion: Debug Current Test File",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["${file}", "-v", "-s"],
+      "cwd": "${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/agent_companion",
+      "envFile": "${workspaceFolder}/.vscode/.env",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/common:${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/data_pipeline:${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/agent_companion"
+      }
+    },
+    {
+      "name": "Agent Companion: Debug Specific Test",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["-k", "${input:testName}", "-v", "-s"],
+      "cwd": "${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/agent_companion",
+      "envFile": "${workspaceFolder}/.vscode/.env",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/common:${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/data_pipeline:${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/agent_companion"
+      }
+    },
+    {
+      "name": "Agent Companion: Debug All Tests",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["agent_companion/", "-v", "-s"],
+      "cwd": "${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/agent_companion",
+      "envFile": "${workspaceFolder}/.vscode/.env",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/common:${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/data_pipeline:${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/agent_companion"
+      }
+    },
+    {
+      "name": "Agent Companion: Debug Main Tests",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["agent_companion/main_test.py", "-v", "-s"],
+      "cwd": "${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/agent_companion",
+      "envFile": "${workspaceFolder}/.vscode/.env",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/common:${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/data_pipeline:${workspaceFolder}/cmg-hopper-aicompanion-backend/backend/agent_companion"
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "testName",
+      "description": "Enter test name or pattern",
+      "default": "test_",
+      "type": "promptString"
+    }
+  ]
+}

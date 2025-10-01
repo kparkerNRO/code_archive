@@ -1,0 +1,103 @@
+services:
+  postgres-db:
+    image: postgres:16
+    container_name: postgres-db
+    volumes:
+      - ai-companion-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: hopper
+      POSTGRES_PASSWORD: hopper
+    command: postgres -c max_connections=200
+    ports:
+      - 5432:5432
+    networks:
+    - api-net 
+  agent_companion: 
+    container_name: agent_companion
+    user: ${UID}
+    build:
+      target: dev
+      args:
+        USER_ID: ${UID:-1000}
+      dockerfile: agent_companion/Dockerfile
+      context: ../backend
+    ports:
+      - "5602:5602"
+      - "5555:5555"
+    volumes:
+      - ../backend/agent_companion/alembic:/app/agent_companion/alembic
+      - ../backend/agent_companion/alembic.ini:/app/agent_companion/alembic.ini
+      - ../backend/agent_companion/agent_companion:/app/agent_companion/agent_companion
+      - ../backend/agent_companion/pyproject.toml:/app/agent_companion/pyproject.toml
+      - ../backend/agent_companion/gunicorn_logging.ini:/app/agent_companion/gunicorn_logging.ini
+      - ../backend/common/:/app/common
+
+    env_file:
+      - .env.dev
+      - path: .env.secrets
+        required: false
+    entrypoint: [  "python", "-Xfrozen_modules=off",
+      "-m", "debugpy", "--listen", "0.0.0.0:5555",
+      "-m", "uvicorn", "agent_companion.main:app", 
+      "--host", "0.0.0.0", 
+      "--reload", 
+      "--port", "5602",
+      "--log-config", "gunicorn_logging.ini" 
+      ]
+    networks:
+    - api-net
+  data_pipeline:
+    depends_on:
+      - postgres-db
+    container_name: data_pipeline
+    user: ${UID}
+    build:
+      target: dev
+      args:
+        USER_ID: ${UID:-1000}
+      dockerfile: data_pipeline/Dockerfile
+      context: ../backend/
+    ports:
+      - "5556:5555"
+    volumes:
+      - ../backend/data_pipeline/data_pipeline:/app/data_pipeline/data_pipeline
+      - ../backend/data_pipeline/scripts:/app/data_pipeline/scripts
+      - ../backend/data_pipeline/pyproject.toml:/app/data_pipeline/pyproject.toml
+      - ../backend/data_pipeline/gunicorn_logging.ini:/app/data_pipeline/gunicorn_logging.ini
+      - ../backend/common/:/app/common
+    env_file:
+      - .env.dev
+      - path: .env.secrets
+        required: false
+    entrypoint: ["sleep", "infinity"]
+    networks:
+    - api-net
+      
+
+  support_services:
+    container_name: support_services
+    user: ${UID}
+    build:
+      args:
+        USER_ID: ${UID:-1000}
+      dockerfile: dev/support_services/Dockerfile
+      context: ..
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./support_services/support:/app/support_services/support
+      - ./support_services/pyproject.toml:/app/support_services/pyproject.toml
+    env_file:
+      - .env.dev
+      - path: .env.secrets
+        required: false
+    networks:
+      - api-net
+
+networks:
+  api-net:
+
+volumes:
+  ai-companion-data:
+    driver: local

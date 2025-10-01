@@ -1,0 +1,163 @@
+name: Seed Database
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to seed"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - qa
+          - prod
+      overwrite:
+        description: "Overwrite existing records"
+        required: false
+        default: false
+        type: boolean
+      truncate_table:
+        description: "Truncate ALL dependent tables (DESTRUCTIVE)"
+        required: false
+        default: false
+        type: boolean
+      confirm_truncate_table:
+        description: "Confirm truncate tables"
+        required: false
+        default: false
+        type: boolean
+      sync_talkdesk_users:
+        description: "Run Talkdesk user sync after successful seeding"
+        required: false
+        default: false
+        type: boolean
+
+run-name: "Seed Database: ${{ github.event.inputs.environment }}"
+
+env:
+  AWS_REGION: us-west-2
+
+jobs:
+  validate-inputs:
+    runs-on: ubuntu-latest
+    outputs:
+      proceed: ${{ steps.validation.outputs.proceed }}
+    steps:
+      - name: Validate inputs
+        id: validation
+        run: |
+          # Check truncate table confirmation
+          if [[ "${{ inputs.truncate_table }}" == "true" && "${{ inputs.confirm_truncate_table }}" != "true" ]]; then
+            echo "Error: Both 'truncate_table' and 'confirm_truncate_table' must be checked to truncate all dependent tables"
+            echo "proceed=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          # Check for production safety
+          if [[ "${{ inputs.environment }}" == "prod" && "${{ inputs.truncate_table }}" == "true" ]]; then
+            echo "Error: Truncating tables is not allowed in production environment"
+            echo "proceed=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          # Check for conflicting flags
+          if [[ "${{ inputs.overwrite }}" == "true" && "${{ inputs.truncate_table }}" == "true" ]]; then
+            echo "Error: Cannot specify both 'overwrite' and 'truncate_table' flags simultaneously"
+            echo "proceed=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          echo "Input validation passed"
+          echo "proceed=true" >> $GITHUB_OUTPUT
+
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      runner: ${{ steps.config.outputs.runner }}
+      secret_manager_arn: ${{ steps.config.outputs.secret_manager_arn }}
+      script_file: ${{ steps.config.outputs.script_file }}
+      talkdesk_sync_function: ${{ steps.config.outputs.talkdesk_sync_function }}
+    steps:
+      - name: Configure environment values
+        id: config
+        run: |
+          ENV="${{ github.event.inputs.environment }}"
+          echo "Configuring for environment: $ENV"
+
+          if [[ "$ENV" == "dev" ]]; then
+            echo "Loading DEV environment configuration..."
+            echo "runner=AICOMPANION-BACKEND_DEV" >> $GITHUB_OUTPUT
+            echo "secret_manager_arn=arn:aws:secretsmanager:us-west-2:842675991019:secret:cmg-hopper-dev-aicompanion-db-credentials-E2GheV" >> $GITHUB_OUTPUT
+            echo "script_file=data/dev.jsonl" >> $GITHUB_OUTPUT
+            echo "talkdesk_sync_function=cmg-hopper-dev-aicompanion-talkdesk-sync-users-docker" >> $GITHUB_OUTPUT
+          elif [[ "$ENV" == "qa" ]]; then
+            echo "Loading QA environment configuration..."
+            echo "runner=AICOMPANION-BACKEND_QA" >> $GITHUB_OUTPUT
+            echo "secret_manager_arn=arn:aws:secretsmanager:us-west-2:521207982840:secret:cmg-hopper-qa-aicompanion-db-credentials-cPgGdb" >> $GITHUB_OUTPUT
+            echo "script_file=data/stage.jsonl" >> $GITHUB_OUTPUT
+            echo "talkdesk_sync_function=cmg-hopper-qa-aicompanion-talkdesk-sync-users-docker" >> $GITHUB_OUTPUT
+          elif [[ "$ENV" == "prod" ]]; then
+            echo "Loading PROD environment configuration..."
+            echo "runner=AICOMPANION-BACKEND_PROD" >> $GITHUB_OUTPUT
+            echo "secret_manager_arn=arn:aws:secretsmanager:us-west-2:788174142189:secret:cmg-hopper-prod-aicompanion-db-credentials-8kS6O2" >> $GITHUB_OUTPUT
+            echo "script_file=data/prod.jsonl" >> $GITHUB_OUTPUT
+            echo "talkdesk_sync_function=cmg-hopper-prod-aicompanion-talkdesk-sync-users-docker" >> $GITHUB_OUTPUT
+          else
+            echo "ERROR: Unknown environment '$ENV'. Supported environments: dev, qa, prod"
+            exit 1
+          fi
+
+          echo "Environment configuration completed successfully"
+
+  seed-database:
+    needs:
+      - validate-inputs
+      - setup
+    if: needs.validate-inputs.outputs.proceed == 'true'
+    runs-on: ${{ needs.setup.outputs.runner }}
+
+    env:
+      BUILD_DIR: build
+      AWS_DEFAULT_REGION: us-west-2
+
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: AWS Connections
+        uses: aws-actions/aws-secretsmanager-get-secrets@v2
+        with:
+          secret-ids: PG,${{ needs.setup.outputs.secret_manager_arn }}
+          parse-json-secrets: true
+
+      - name: Seed Database
+        run: |
+          # Build the command with conditional flags
+          SEED_CMD="cd /app/data_pipeline && uv run --project /app/data_pipeline/pyproject.toml python scripts/seed_db.py scripts/${{ needs.setup.outputs.script_file }}"
+
+          if [[ "${{ inputs.overwrite }}" == "true" ]]; then
+            SEED_CMD="$SEED_CMD --overwrite"
+          fi
+
+          if [[ "${{ inputs.truncate_table }}" == "true" ]]; then
+            SEED_CMD="$SEED_CMD --truncate-table"
+          fi
+
+          # Add Talkdesk user sync if requested
+          if [[ "${{ inputs.sync_talkdesk_users }}" == "true" ]]; then
+            SEED_CMD="$SEED_CMD --invoke-lambda ${{ needs.setup.outputs.talkdesk_sync_function }}"
+          fi
+
+          docker-compose -f dev/docker-compose.yml run --rm \
+            --no-deps \
+            -e PG_USER=$PG_USERNAME \
+            -e PG_PASSWORD=$PG_PASSWORD \
+            -e PG_HOST=$PG_HOST \
+            -e PG_DBNAME=$PG_DBNAME \
+            -e PG_PORT=$PG_PORT \
+            -e environment=${{ inputs.environment }} \
+            --entrypoint "/bin/bash -c '$SEED_CMD'" \
+            data_pipeline
